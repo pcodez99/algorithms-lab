@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Esplora albero</title>
+  <style>
+    :root { font-family: ui-sans-serif, system-ui, sans-serif; color: #242923; background: #f7f7f2; }
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    header { display: flex; justify-content: center; align-items: baseline; gap: 18px; padding: 25px 32px 22px; border-bottom: 1px solid #d9ddd4; }
+    h1 { margin: 0; font-size: 25px; letter-spacing: -.04em; font-weight: 650; }
+    header span { color: #657064; font-size: 13px; }
+    main { min-height: calc(100vh - 80px); }
+    .toolbar { display: flex; justify-content: center; align-items: center; gap: 8px; padding: 14px 24px; border-bottom: 1px solid #e3e6de; }
+    .toolbar strong { margin-right: 12px; font-size: 12px; font-weight: 600; color: #657064; letter-spacing: .08em; text-transform: uppercase; }
+    button { font: inherit; cursor: pointer; }
+    .toolbar button { min-width: 35px; height: 33px; padding: 0 11px; background: #fff; color: #39483b; border: 1px solid #d5dbd1; border-radius: 7px; }
+    .toolbar button:hover, .toolbar button:focus-visible { border-color: #55715d; outline: none; }
+    #stage { height: min(64vh, 650px); min-height: 400px; overflow: auto; background-color: #fbfcf8; background-image: radial-gradient(#dfe5dc 1px, transparent 1px); background-size: 20px 20px; }
+    svg { display: block; margin: 12px auto; }
+    .edge { stroke: #b2c0b2; stroke-width: 2; fill: none; }
+    .node { cursor: pointer; }
+    .node rect { fill: #fff; stroke: #aebdab; stroke-width: 1.5; transition: fill .16s, stroke .16s; }
+    .node:hover rect, .node:focus-visible rect { stroke: #55715d; stroke-width: 2.5; }
+    .node.selected rect { fill: #334f3b; stroke: #334f3b; }
+    .node text { fill: #26382a; text-anchor: middle; dominant-baseline: middle; font-size: 17px; font-weight: 650; pointer-events: none; }
+    .node .level { fill: #657064; font-size: 11px; font-weight: 600; }
+    .node.selected text { fill: #fff; }
+    .node.selected .level { fill: #506853; }
+    .node:focus-visible { outline: none; }
+    aside { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 24px 40px; max-width: 1240px; margin: auto; padding: 32px; background: #f7f7f2; }
+    .details { border-top: 1px solid #d9ddd4; }
+    .eyebrow { margin: 0 0 14px; color: #667366; font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+    #selected-key { margin: 0 0 5px; font-size: 44px; line-height: 1; letter-spacing: -.06em; font-weight: 620; }
+    #selected-value { margin: 0; color: #657064; font-size: 15px; overflow-wrap: anywhere; }
+    dl { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0 20px; margin: 0; }
+    .row { display: flex; flex-direction: column; gap: 5px; padding: 13px 0; border-bottom: 1px solid #d9ddd4; font-size: 14px; }
+    dt { color: #657064; font-size: 12px; }
+    dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+    .hint { grid-column: 1 / -1; margin: 0; color: #768175; font-size: 12px; line-height: 1.5; }
+    @media (max-width: 760px) {
+      header { padding: 20px; flex-wrap: wrap; gap: 6px 14px; }
+      #stage { height: 55vh; min-height: 360px; }
+      aside { grid-template-columns: 1fr; gap: 22px; padding: 24px 20px; }
+      dl { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (prefers-reduced-motion: reduce) { .node rect { transition: none; } }
+  </style>
+</head>
+<body>
+  <header><h1>Esplora albero</h1><span id="summary"></span></header>
+  <main>
+    <section class="workspace" aria-label="Visualizzazione dell'albero">
+      <div class="toolbar"><strong>Struttura</strong><button id="zoom-out" aria-label="Riduci">−</button><button id="zoom-in" aria-label="Ingrandisci">+</button><button id="fit">Adatta</button></div>
+      <div id="stage"><svg id="tree" role="img" aria-label="Albero interattivo"></svg></div>
+    </section>
+    <aside aria-live="polite">
+      <div class="identity"><p class="eyebrow">Nodo selezionato</p><h2 id="selected-key"></h2><p id="selected-value"></p></div>
+      <div class="details"><dl id="attributes"></dl></div>
+      <p class="hint">L0 indica la radice. Seleziona un nodo per leggerne gli attributi. Usa Tab e Invio anche da tastiera.</p>
+    </aside>
+  </main>
+  <script id="snapshot" type="application/json">__TREE_DATA__</script>
+  <script>
+    const nodes = JSON.parse(document.getElementById('snapshot').textContent).nodes;
+    const byPath = new Map(nodes.map(node => [node.path, node]));
+    function layout(path) {
+      if (!byPath.has(path)) return null;
+      const left = layout(path + 'L');
+      const right = layout(path + 'R');
+      let offset = 90;
+      if (left && right) {
+        for (const [depth, leftmost] of right.bounds) {
+          const other = left.bounds.get(depth);
+          if (other) offset = Math.max(offset, (other.max - leftmost.min + 180) / 2);
+        }
+      }
+      const points = new Map([[path, { x: 0, depth: 0 }]]);
+      const bounds = new Map([[0, { min: 0, max: 0 }]]);
+      for (const [child, shift] of [[left, -offset], [right, offset]]) {
+        if (!child) continue;
+        for (const [id, point] of child.points) {
+          const x = point.x + shift, depth = point.depth + 1;
+          points.set(id, { x, depth });
+          const edge = bounds.get(depth) || { min: x, max: x };
+          edge.min = Math.min(edge.min, x); edge.max = Math.max(edge.max, x);
+          bounds.set(depth, edge);
+        }
+      }
+      return { points, bounds };
+    }
+    const raw = layout('').points;
+    const extent = Math.max(...[...raw.values()].map(p => Math.abs(p.x)));
+    const width = Math.max(800, 2 * extent + 180);
+    const positions = new Map([...raw].map(([path, p]) => [path, { x: width / 2 + p.x, y: 70 + p.depth * 100 }]));
+    const height = Math.max(360, 80 + Math.max(...[...positions.values()].map(p => p.y)));
+    const svg = document.getElementById('tree');
+    const stage = document.getElementById('stage');
+    const ns = 'http://www.w3.org/2000/svg';
+    svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+    document.getElementById('summary').textContent = `${nodes.length} nodi · profondità massima ${Math.max(...nodes.map(n => n.path.length))}`;
+
+    function element(tag, attrs, parent) {
+      const item = document.createElementNS(ns, tag);
+      for (const [key, value] of Object.entries(attrs)) item.setAttribute(key, value);
+      parent.append(item);
+      return item;
+    }
+    for (const node of nodes) {
+      if (!node.path) continue;
+      const from = positions.get(node.path.slice(0, -1));
+      const to = positions.get(node.path);
+      element('path', { class: 'edge', d: `M ${from.x} ${from.y + 28} L ${to.x} ${to.y - 28}` }, svg);
+    }
+    const shapes = new Map();
+    for (const node of nodes) {
+      const { x, y } = positions.get(node.path);
+      const group = element('g', { class: 'node', tabindex: '0', role: 'button', 'aria-label': `Nodo ${node.key}, livello ${node.path.length}`, transform: `translate(${x} ${y})` }, svg);
+      element('rect', { x: -55, y: -28, width: 110, height: 56, rx: 12 }, group);
+      element('text', { x: 0, y: 1 }, group).textContent = node.key;
+      element('text', { class: 'level', x: 71, y: 1 }, group).textContent = `L${node.path.length}`;
+      group.addEventListener('click', () => select(node.path));
+      group.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); select(node.path); } });
+      shapes.set(node.path, group);
+    }
+    function select(path) {
+      for (const [id, shape] of shapes) shape.classList.toggle('selected', id === path);
+      const node = byPath.get(path);
+      document.getElementById('selected-key').textContent = node.key;
+      document.getElementById('selected-value').textContent = node.value;
+      const rows = [
+        ['Chiave', node.key], ['Valore', node.value], ['Size', node.size], ['Altezza', node.height],
+        ['Profondità', path.length], ['Padre', path ? byPath.get(path.slice(0, -1))?.key : '—'],
+        ['Figlio sinistro', byPath.get(path + 'L')?.key ?? '—'], ['Figlio destro', byPath.get(path + 'R')?.key ?? '—']
+      ];
+      const list = document.getElementById('attributes');
+      list.replaceChildren();
+      for (const [label, value] of rows) {
+        const row = document.createElement('div'); row.className = 'row';
+        const dt = document.createElement('dt'); dt.textContent = label;
+        const dd = document.createElement('dd'); dd.textContent = value;
+        row.append(dt, dd); list.append(row);
+      }
+    }
+    let zoom = 1;
+    function setZoom(value) {
+      zoom = Math.min(2, Math.max(.35, value));
+      svg.setAttribute('width', width * zoom);
+      svg.setAttribute('height', height * zoom);
+    }
+    document.getElementById('zoom-in').addEventListener('click', () => setZoom(zoom * 1.25));
+    document.getElementById('zoom-out').addEventListener('click', () => setZoom(zoom / 1.25));
+    const fit = () => setZoom(Math.min(1, (stage.clientWidth - 24) / width, (stage.clientHeight - 24) / height));
+    document.getElementById('fit').addEventListener('click', fit);
+    select('');
+    fit();
+  </script>
+</body>
+</html>

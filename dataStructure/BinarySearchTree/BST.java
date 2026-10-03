@@ -15,14 +15,6 @@ public class BST<K extends Comparable<K>, V> {
             this.left = null;
             this.right = null;
         }
-
-        public K getKey(){
-            return this.key;
-        }
-
-        public V getValue(){
-            return this.value;
-        }
     }
 
     private BSTNode root; 
@@ -39,17 +31,23 @@ public class BST<K extends Comparable<K>, V> {
     }
 
     private BSTNode put(BSTNode x, K key, V value) {
-        if(x == null) return new BSTNode(key, value, 1);
-        int cmp = key.compareTo(x.getKey());
+        if(x == null) return new BSTNode(key, value, 0);
+        int cmp = key.compareTo(x.key);
         if(cmp < 0) x.left = put(x.left, key, value);
         else if(cmp > 0) x.right = put(x.right, key, value);
         else x.value = value;
+        x.size++;
         return x;
     }
 
     public V getValue(K key) {
         if(key == null) throw new IllegalArgumentException("calls getValue() with a null key");
         return get(root, key).value;
+    }
+
+    public int getSize(K key) {
+        if(key == null) throw new IllegalArgumentException("calls getValue() with a null key");
+        return get(root, key).size;
     }
 
     private BSTNode get(BSTNode x, K key) {

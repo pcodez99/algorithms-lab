@@ -1,27 +1,20 @@
 package dataStructure;
 
-import dataStructure.BinarySearchTree.BST;
+import java.util.Random;
+
+import dataStructure.AVL.AVL;
 
 public class Main {
     public static void main(String[] args) {
-        BST<Integer, String> a = new BST<Integer, String>();
 
-        a.insert(3, "Tre");
-        a.insert(2, "Due");
-        a.insert(10, "Dieci");
+        AVL<Integer, String> a = new AVL<Integer, String>();
 
-        for(int i = 0; i < 10; a.insert(10+i++, "MAGGIORE"));
+        Random random = new Random();
+        for(int i = 0; i < 10; i++) {
+            a.insert(random.nextInt(51), "TXT");
+        }
 
-        System.out.println(a.getValue(10));
-        System.out.println(a.getValue(3));
-        System.out.println(a.getValue(2));
+        if (args.length > 0 && args[0].equals("--tree")) a.printTree();
 
-        System.out.println("Minimo: " + a.GetMin());
-
-        a.deleteKey(2);
-
-        System.out.println("Minimo: " + a.GetMin());
-
-        System.out.println("Quanto valori più grandi: " + a.getHowMuchGreatestNode(10));
     }
 }
