@@ -9,7 +9,8 @@ from pathlib import Path
 root = Path(__file__).resolve().parent
 with tempfile.TemporaryDirectory() as classes:
     subprocess.run(
-        ["javac", "-d", classes, "dataStructure/Main.java", "dataStructure/AVL/AVL.java"],
+        ["javac", "-cp", classes, "-sourcepath", str(root),
+         "-d", classes, "dataStructure/Main.java"],
         cwd=root,
         check=True,
     )
@@ -17,15 +18,20 @@ with tempfile.TemporaryDirectory() as classes:
         ["java", "-cp", classes, "dataStructure.Main", "--tree"],
         cwd=root,
         check=True,
-        capture_output=True,
+        stdout=subprocess.PIPE,
         text=True,
     )
 
 nodes = []
 for line in result.stdout.splitlines():
-    path, key, size, height, value = line.split("\t", 4)
-    nodes.append({"path": path, "key": int(key), "value": value,
-                  "size": int(size), "height": int(height)})
+    path, key, size, height, value, *info = line.split("\t", 5)
+    node = {"path": path, "key": int(key), "value": value,
+            "size": int(size), "height": int(height)}
+    if info:
+        if info[0] not in ("true", "false"):
+            raise SystemExit(f"Colore del nodo non valido: {info[0]!r}")
+        node["isRed"] = info[0] == "true"
+    nodes.append(node)
 if not nodes or nodes[0]["path"] != "":
     raise SystemExit("Main non ha generato uno snapshot valido")
 
