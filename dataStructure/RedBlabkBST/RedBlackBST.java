@@ -5,7 +5,6 @@ public class RedBlackBST <K extends Comparable<K>, V> {
     private RBNode root;
     private static final boolean RED = true;
     private static final boolean BLACK = false;
-    private int n;
 
     public class RBNode {
         private K key;
