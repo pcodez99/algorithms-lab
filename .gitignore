@@ -1,0 +1,9 @@
+.DS_Store
+.vscode/
+*.class
+*.jar
+/build/
+/albero.html
+/albero.json
+/albero.png
+/tmp/pdfs/*.png
