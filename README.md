@@ -8,6 +8,7 @@ Raccolta di esercitazioni e implementazioni in Java per il corso di **Laboratori
 | --- | --- |
 | [Strutture dati](dataStructure/) | Alberi binari di ricerca, AVL e rosso-neri, coda di priorità indicizzata e Union-Find |
 | [Grafi](Graph/) | Liste e matrici di adiacenza, grafi orientati e pesati, albero ricoprente minimo con Kruskal |
+| [Progetto di ordinamento topologico](Graph/TopologicalOrder/) | Pianificazione delle attività con l’algoritmo di Kahn e rilevamento dei cicli |
 | [Stringhe](patternMatching/) e [hashing](hashing/) | Ricerca ingenua, KMP e tabella hash con concatenamento separato |
 | [Laboratorio AVL](bst-lab/index.html) | Demo interattiva di inserimenti, cancellazioni e rotazioni da aprire nel browser |
 
