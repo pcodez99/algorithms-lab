@@ -22,4 +22,4 @@ javac -d build patternMatching/*.java
 java -cp build patternMatching.Main
 ```
 
-Per grafi e hashing serve anche `algs4.jar`. Le istruzioni per i grafi sono nella [guida del package](Graph/README.md).
+Grafi e hashing usano [algs4](algs4/), inclusa nella repo. I comandi per i grafi sono nella [guida del package](Graph/README.md).

@@ -35,12 +35,10 @@ Matrici: `addEdge(v,w)` oppure `addEdge(v,w,peso)`, `adjacent(v,w)`, `adj(v)` pe
 
 Input delle liste: numero di vertici, numero di archi, poi una coppia di vertici per arco (con peso finale per i grafi pesati), separati da spazi o righe.
 
-Dalla radice della repo, scarica `algs4.jar` nella cartella di compilazione, poi esegui i test dei grafi e l’esempio di Kruskal.
+Dalla radice della repo, usa il JAR incluso per eseguire i test dei grafi e l’esempio di Kruskal.
 
 ```sh
-mkdir -p build
-curl -fsSL https://algs4.cs.princeton.edu/code/algs4.jar -o build/algs4.jar
-javac -cp build/algs4.jar -d build Main.java Graph/*.java
-java -ea -cp build:build/algs4.jar Graph.GraphTest
-java -cp build:build/algs4.jar Main
+javac -cp .:algs4/algs4.jar -d build Main.java Graph/*.java
+java -ea -cp build:algs4/algs4.jar Graph.GraphTest
+java -cp build:algs4/algs4.jar Main
 ```
